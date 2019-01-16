@@ -1,0 +1,4 @@
+Module: IDO Reports
+Version: 0.9.0
+Depends: reporting
+Description: Reports for IDO
