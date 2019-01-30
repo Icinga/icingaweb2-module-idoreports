@@ -17,6 +17,10 @@ class HostSlaReport extends IdoReport
     {
         $data = $this->fetchSla($timerange, $config);
 
+        if (empty($data)) {
+            return Html::tag('p', 'No data found.');
+        }
+
         \reset($data);
 
         $tableHeaderCells = [];
@@ -71,11 +75,13 @@ class HostSlaReport extends IdoReport
     {
         $data = $this->fetchSla($timerange, $config);
 
-        \reset($data);
+        if (! empty($data)) {
+            \reset($data);
 
-        $header = \array_keys(\current($data));
+            $header = \array_keys(\current($data));
 
-        \array_unshift($data, $header);
+            \array_unshift($data, $header);
+        }
 
         return $data;
     }
