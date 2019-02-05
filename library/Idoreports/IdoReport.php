@@ -1,4 +1,5 @@
 <?php
+// Icinga IDO Reports | (c) 2018 Icinga GmbH | GPLv2
 
 namespace Icinga\Module\Idoreports;
 
