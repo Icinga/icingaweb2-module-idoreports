@@ -130,7 +130,7 @@ class ServiceSlaReport extends IdoReport
 
             $end->add($interval);
 
-            $period = new \DatePeriod($start, $interval ,$end);
+            $period = new \DatePeriod($start, $interval, $end, \DatePeriod::EXCLUDE_START_DATE);
 
             $objectAvg = [];
             $periodAvg = [];
