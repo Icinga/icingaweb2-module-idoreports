@@ -132,10 +132,15 @@ class ServiceSlaReport extends IdoReport
 
             $period = new \DatePeriod($start, $interval ,$end);
 
+            $objectAvg = [];
+            $periodAvg = [];
+
             foreach ($period as $date) {
                 foreach ($this->fetchServiceSla(new Timerange($start, $date), $config) as $row) {
                     $key = "{$row->host_display_name}!{$row->service_display_name}";
                     $data[$key][$date->format($format)] = \round((float) $row->sla, 2);
+                    $objectAvg[$key][]= (float) $row->sla;
+                    $periodAvg[$date->format($format)][] = (float) $row->sla;
                 }
 
                 $start = $date;
@@ -144,13 +149,31 @@ class ServiceSlaReport extends IdoReport
             foreach ($data as $key => &$row) {
                 list($hostname, $serviceName) = \explode('!', $key);
                 $row = ['Hostname' => $hostname, 'Service Name' => $serviceName] + $row;
+                $row['Average'] = \round(\array_sum($objectAvg[$key]) / \count($objectAvg[$key]), 2);
+                $periodAvg['Average'][] = \round(\array_sum($objectAvg[$key]) / \count($objectAvg[$key]), 2);
+            }
+
+            if (! empty($periodAvg)) {
+                foreach ($periodAvg as $period => &$avg) {
+                    $avg = \round(\array_sum($avg) / \count($avg), 2);
+                }
+                $data[] = ['Hostname' => null, 'Service Name' => null] + $periodAvg;
             }
         } else {
+            $avg = [];
             foreach ($this->fetchServiceSla($timerange, $config) as $row) {
                 $data[] = [
                     'Hostname'     => $row->host_display_name,
                     'Service Name' => $row->service_display_name,
                     'SLA in %'     => \round((float)$row->sla, 2)
+                ];
+                $avg[] = (float)$row->sla;
+            }
+            if (! empty($avg)) {
+                $data[] = [
+                    'Hostname'         => null,
+                    'Service Name'     => null,
+                    'SLA in %' => \round(\array_sum($avg) / \count($avg), 2)
                 ];
             }
         }

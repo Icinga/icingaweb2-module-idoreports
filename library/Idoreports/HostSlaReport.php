@@ -136,9 +136,14 @@ class HostSlaReport extends IdoReport
 
             $period = new \DatePeriod($start, $interval ,$end);
 
+            $objectAvg = [];
+            $periodAvg = [];
+
             foreach ($period as $date) {
                 foreach ($this->fetchHostSla(new Timerange($start, $date), $config) as $row) {
                     $data[$row->host_display_name][$date->format($format)] = \round((float) $row->sla, 2);
+                    $objectAvg[$row->host_display_name][]= (float) $row->sla;
+                    $periodAvg[$date->format($format)][] = (float) $row->sla;
                 }
 
                 $start = $date;
@@ -146,12 +151,29 @@ class HostSlaReport extends IdoReport
 
             foreach ($data as $hostname => &$row) {
                 $row = ['Hostname' => $hostname] + $row;
+                $row['Average'] = \round(\array_sum($objectAvg[$hostname]) / \count($objectAvg[$hostname]), 2);
+                $periodAvg['Average'][] = \round(\array_sum($objectAvg[$hostname]) / \count($objectAvg[$hostname]), 2);
+            }
+
+            if (! empty($periodAvg)) {
+                foreach ($periodAvg as $period => &$avg) {
+                    $avg = \round(\array_sum($avg) / \count($avg), 2);
+                }
+                $data[] = ['Hostname' => null] + $periodAvg;
             }
         } else {
+            $avg = [];
             foreach ($this->fetchHostSla($timerange, $config) as $row) {
                 $data[] = [
                     'Hostname' => $row->host_display_name,
                     'SLA in %' => \round((float) $row->sla, 2)
+                ];
+                $avg[] = (float)$row->sla;
+            }
+            if (! empty($avg)) {
+                $data[] = [
+                    'Hostname' => null,
+                    'SLA in %' => \round(\array_sum($avg) / \count($avg), 2)
                 ];
             }
         }
