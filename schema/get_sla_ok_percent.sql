@@ -96,10 +96,10 @@ FROM (
 SELECT
   state_time,
   UNIX_TIMESTAMP(state_time),
-  CAST(COALESCE(@last_ts, UNIX_TIMESTAMP(@start)) AS INT),
+  CAST(COALESCE(@last_ts, UNIX_TIMESTAMP(@start)) AS UNSIGNED),
   CAST(UNIX_TIMESTAMP(state_time)
-       - CAST(COALESCE(@last_ts, UNIX_TIMESTAMP(@start)) AS INT)
-       + CAST(COALESCE(@add_duration, 0) AS INT) AS INT) AS duration,
+       - CAST(COALESCE(@last_ts, UNIX_TIMESTAMP(@start)) AS UNSIGNED)
+       + CAST(COALESCE(@add_duration, 0) AS UNSIGNED) AS UNSIGNED) AS duration,
 
   -- @add_duration is used as long as we haven't seen a state
   @add_duration AS add_duration,
