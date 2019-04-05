@@ -17,6 +17,7 @@ abstract class IdoReport extends ReportHook
 {
     protected function getBackend()
     {
+        MonitoringBackend::clearInstances();
         return MonitoringBackend::instance();
     }
 
