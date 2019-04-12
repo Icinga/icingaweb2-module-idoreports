@@ -15,4 +15,3 @@ CREATE TABLE icinga_outofsla_periods (
   PRIMARY KEY tp_start (timeperiod_object_id, start_time),
   UNIQUE KEY tp_end (timeperiod_object_id, end_time)
 ) ENGINE InnoDB;
-
