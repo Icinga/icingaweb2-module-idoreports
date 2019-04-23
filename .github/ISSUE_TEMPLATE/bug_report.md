@@ -14,6 +14,7 @@ A clear and concise description of what the bug is.
 ## To Reproduce
 
 Steps to reproduce the behavior:
+
 1. 
 2. 
 3. 
@@ -34,6 +35,7 @@ If applicable, add screenshots to help explain your problem.
 * Icinga Web 2 version and modules (System - About):
 * Web browser and version:
 * Icinga 2 version used (`icinga2 --version`):
+* MySQL version (`mysql --version`):
 * PHP version used (`php --version`):
 * Server operating system and version:
 
