@@ -30,6 +30,14 @@ class ServiceSlaReport extends IdoReport
                 'month' => 'Month'
             ]
         ]);
+
+        $form->addElement('number', 'threshold', [
+            'label'       => 'Threshold',
+            'placeholder' => '99.5',
+            'step'        => '0.01',
+            'min'         => '1',
+            'max'         => '100'
+        ]);
     }
 
     protected function fetchSla(Timerange $timerange, array $config = null)

@@ -30,6 +30,8 @@ abstract class IdoReport extends ReportHook
             return Html::tag('p', 'No data found.');
         }
 
+        $threshold = isset($config['threshold']) ? (float) $config['threshold'] : 99.5;
+
         $tableHeaderCells = [];
 
         foreach ($data->getDimensions() as $dimension) {
@@ -52,7 +54,7 @@ abstract class IdoReport extends ReportHook
             // We only have one metric
             $sla = $row->getValues()[0];
 
-            if ($sla < 99.5) {
+            if ($sla < $threshold) {
                 $slaClass = 'nok';
             } else {
                 $slaClass = 'ok';
@@ -66,7 +68,7 @@ abstract class IdoReport extends ReportHook
         // We only have one average
         $average = $data->getAverages()[0];
 
-        if ($average < 99.5) {
+        if ($average < $threshold) {
             $slaClass = 'nok';
         } else {
             $slaClass = 'ok';
