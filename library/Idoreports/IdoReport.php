@@ -207,4 +207,26 @@ abstract class IdoReport extends ReportHook
 
         return $this->getBackend()->getResource()->getDbAdapter()->query($select);
     }
+
+    protected function yieldTimerange(Timerange $timerange, \DateInterval $interval)
+    {
+        $start = clone $timerange->getStart();
+        $end = clone $timerange->getEnd();
+
+        $oneSecond = new \DateInterval('PT1S');
+
+        $period = new \DatePeriod($start, $interval, $end, \DatePeriod::EXCLUDE_START_DATE);
+
+        foreach ($period as $date) {
+            /** @var \DateTime $date */
+            $periodEnd = clone $date;
+            $periodEnd->sub($oneSecond);
+
+            yield [$start, $periodEnd];
+
+            $start = $date;
+        }
+
+        yield [$start, $end];
+    }
 }

@@ -45,9 +45,6 @@ class ServiceSlaReport extends IdoReport
         $rd = new ReportData();
 
         if (isset($config['breakdown']) && $config['breakdown'] !== 'none') {
-            $start = clone $timerange->getStart();
-            $end = clone $timerange->getEnd();
-
             switch ($config['breakdown']) {
                 case 'day':
                     $interval = new \DateInterval('P1D');
@@ -63,24 +60,18 @@ class ServiceSlaReport extends IdoReport
                     break;
             }
 
-            $end->add($interval);
-
-            $period = new \DatePeriod($start, $interval ,$end, \DatePeriod::EXCLUDE_START_DATE);
-
             $rd
                 ->setDimensions(['Hostname', 'Service Name', ucfirst($config['breakdown'])])
                 ->setValues(['SLA in %']);
 
             $rows = [];
 
-            foreach ($period as $date) {
-                foreach ($this->fetchServiceSla(new Timerange($start, $date), $config) as $row) {
+            foreach ($this->yieldTimerange($timerange, $interval) as list($start, $end)) {
+                foreach ($this->fetchServiceSla(new Timerange($start, $end), $config) as $row) {
                     $rows[] = (new ReportRow())
-                        ->setDimensions([$row->host_display_name, $row->service_display_name, $date->format($format)])
+                        ->setDimensions([$row->host_display_name, $row->service_display_name, $start->format($format)])
                         ->setValues([(float) $row->sla]);
                 }
-
-                $start = $date;
             }
 
             $rd->setRows($rows);
