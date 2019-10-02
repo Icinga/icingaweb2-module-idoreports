@@ -3,9 +3,11 @@
 
 namespace Icinga\Module\Idoreports;
 
+use Icinga\Application\Icinga;
 use Icinga\Data\Filter\Filter;
 use Icinga\Data\Filterable;
 use Icinga\Exception\ConfigurationError;
+use Icinga\Exception\ProgrammingError;
 use Icinga\Module\Monitoring\Backend\MonitoringBackend;
 use Icinga\Module\Reporting\Hook\ReportHook;
 use Icinga\Module\Reporting\ReportData;
@@ -151,7 +153,9 @@ abstract class IdoReport extends ReportHook
             );
         }
 
-        $filterable->applyFilter($filter);
+        $filters = $this->addUserRestrictionFilters($filter);
+
+        $filterable->applyFilter($filters);
 
         return $filterable;
     }
@@ -228,5 +232,41 @@ abstract class IdoReport extends ReportHook
         }
 
         yield [$start, $end];
+    }
+
+    protected function addUserRestrictionFilters($filters)
+    {
+        $globalRestriction = [];
+        $userRestriction = [];
+        if (! empty($filters)) {
+            $globalRestriction[] = $filters;
+        }
+        foreach ($this->getRestrictions('monitoring/filter/objects') as $filter) {
+            if ($filter === '*') {
+                $userRestriction[] = Filter::matchAny();
+            } else {
+                $userRestriction[] = Filter::fromQueryString($filter);
+            }
+        }
+
+        $globalRestriction[] = Filter::matchAny($userRestriction);
+
+        return Filter::matchAll($globalRestriction);
+    }
+
+    /**
+     * @param string $name
+     * @return array
+     * @throws ProgrammingError
+     */
+    protected function getRestrictions($name)
+    {
+        $result = [];
+        $icingaApp = Icinga::app();
+        if (! $icingaApp->isCli()) {
+            $result = $icingaApp->getRequest()->getUser()->getRestrictions($name);
+        }
+
+        return $result;
     }
 }
