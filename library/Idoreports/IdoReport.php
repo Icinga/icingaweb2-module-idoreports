@@ -3,9 +3,11 @@
 
 namespace Icinga\Module\Idoreports;
 
+use Icinga\Application\Icinga;
 use Icinga\Data\Filter\Filter;
 use Icinga\Data\Filterable;
 use Icinga\Exception\ConfigurationError;
+use Icinga\Exception\QueryException;
 use Icinga\Module\Monitoring\Backend\MonitoringBackend;
 use Icinga\Module\Reporting\Hook\ReportHook;
 use Icinga\Module\Reporting\ReportData;
@@ -107,22 +109,10 @@ abstract class IdoReport extends ReportHook
      */
     abstract protected function fetchSla(Timerange $timerange, array $config = null);
 
-    protected function getBackend()
+    protected function applyFilterAndRestrictions($filter, Filterable $filterable)
     {
-        MonitoringBackend::clearInstances();
-
-        return MonitoringBackend::instance();
-    }
-
-    protected function applyFilterString($string, Filterable $filterable)
-    {
-        if ($string === '*') {
-            return $filterable;
-        }
-
-        $filter = Filter::matchAll();
-
-        $filter->setAllowedFilterColumns(array(
+        $filters = Filter::matchAll();
+        $filters->setAllowedFilterColumns(array(
             'host_name',
             'hostgroup_name',
             'instance_name',
@@ -134,12 +124,17 @@ abstract class IdoReport extends ReportHook
         ));
 
         try {
-            $filter->addFilter(Filter::fromQueryString($string));
-        } catch (\Exception $e) {
+            if ($filter !== '*') {
+                $filters->addFilter(Filter::fromQueryString($filter));
+            }
+
+            foreach ($this->yieldMonitoringRestrictions() as $filter) {
+                $filters->addFilter($filter);
+            }
+        } catch (QueryException $e) {
             throw new ConfigurationError(
-                'Cannot apply the filter %s. You can only use the following columns: %s',
-                $string,
-                \implode(', ', array(
+                'Cannot apply filter. You can only use the following columns: %s',
+                implode(', ', array(
                     'instance_name',
                     'host_name',
                     'hostgroup_name',
@@ -151,18 +146,33 @@ abstract class IdoReport extends ReportHook
             );
         }
 
-        $filterable->applyFilter($filter);
+        $filterable->applyFilter($filters);
+    }
 
-        return $filterable;
+    protected function getBackend()
+    {
+        MonitoringBackend::clearInstances();
+
+        return MonitoringBackend::instance();
+    }
+
+    protected function getRestrictions($name)
+    {
+        $app = Icinga::app();
+        if (! $app->isCli()) {
+            $result = $app->getRequest()->getUser()->getRestrictions($name);
+        } else {
+            $result = [];
+        }
+
+        return $result;
     }
 
     protected function fetchHostSla(Timerange $timerange, array $config)
     {
         $sla = $this->getBackend()->select()->from('hoststatus', ['host_display_name'])->order('host_display_name');
 
-        if (isset($config['filter'])) {
-            $this->applyFilterString($config['filter'], $sla);
-        }
+        $this->applyFilterAndRestrictions($config['filter'] ?: '*', $sla);
 
         /** @var \Zend_Db_Select $select */
         $select = $sla->getQuery()->getSelectQuery();
@@ -188,9 +198,7 @@ abstract class IdoReport extends ReportHook
             ->from('servicestatus', ['host_display_name', 'service_display_name'])
             ->order('host_display_name');
 
-        if (isset($config['filter'])) {
-            $this->applyFilterString($config['filter'], $sla);
-        }
+        $this->applyFilterAndRestrictions($config['filter'] ?: '*', $sla);
 
         /** @var \Zend_Db_Select $select */
         $select = $sla->getQuery()->getSelectQuery();
@@ -206,6 +214,15 @@ abstract class IdoReport extends ReportHook
         $select->columns($columns);
 
         return $this->getBackend()->getResource()->getDbAdapter()->query($select);
+    }
+
+    protected function yieldMonitoringRestrictions()
+    {
+        foreach ($this->getRestrictions('monitoring/filter/objects') as $restriction) {
+            if ($restriction !== '*') {
+                yield Filter::fromQueryString($restriction);
+            }
+        }
     }
 
     protected function yieldTimerange(Timerange $timerange, \DateInterval $interval)
