@@ -38,8 +38,8 @@ Please import those files into your Icinga database.
 The following example assumes that your Icinga database and user is named **icinga2**:
 
 ```
-mysql -p -u icinga2 icinga2 < schema/slaperiods.sql
-mysql -p -u icinga2 icinga2 < schema/get_sla_ok_percent.sql
+mysql -p -u icinga2 icinga2 < schema/mysql/slaperiods.sql
+mysql -p -u icinga2 icinga2 < schema/mysql/get_sla_ok_percent.sql
 ```
 
 Please adapt the database and username to your environment.
