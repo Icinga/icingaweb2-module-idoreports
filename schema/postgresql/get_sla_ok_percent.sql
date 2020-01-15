@@ -204,7 +204,12 @@ WITH
 
 --SELECT * FROM effective_downtimes;
 SELECT
-    100.0 - EXTRACT('epoch' FROM SUM(duration)) / EXTRACT('epoch' FROM endtime - starttime ) * 100.0 AS availability
+        CASE EXTRACT('epoch' FROM SUM(duration)) <> 0
+                WHEN TRUE
+                    THEN 100.0 - EXTRACT('epoch' FROM SUM(duration)) / EXTRACT('epoch' FROM endtime - starttime ) * 100.0
+                    ELSE 100.00
+        END AS availability
 FROM
     effective_downtimes;
+
 $$;
