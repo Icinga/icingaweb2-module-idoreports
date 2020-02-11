@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION idoreports_get_sla_ok_percent(
-	id INTEGER,
+	id BIGINT,
 	starttime TIMESTAMP WITH TIME ZONE,
 	endtime  TIMESTAMP WITH TIME ZONE,
 	sla_id INTEGER DEFAULT NULL
