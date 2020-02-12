@@ -1,3 +1,4 @@
+SELECT plan(0);
 CREATE TABLE icinga_downtimehistory (
     object_id numeric DEFAULT '0'::numeric,
     entry_time timestamp with time zone,
