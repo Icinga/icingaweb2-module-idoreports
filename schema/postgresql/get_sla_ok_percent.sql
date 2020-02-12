@@ -12,14 +12,23 @@ AS $$
 --\set endtime '2019-02-20 10:00:00'
 --\set sla_id null 
 
-WITH before AS (
+WITH crit AS (
+	SELECT CASE objecttype_id
+		WHEN 1 THEN 0
+		WHEN 2 THEN 1
+		END
+	AS value
+	FROM icinga_objects 
+	WHERE object_id = id
+),
+before AS (
 	-- low border, last event before the range we are looking for:
 	SELECT down, state_time_ AS state_time,state FROM (
 	(SELECT 1 AS prio
-		,state > 1 AS down
+		,state > crit.value AS down
 		,GREATEST(state_time,starttime) AS state_time_
 		,state
-	FROM icinga_statehistory 
+	FROM icinga_statehistory,crit
 	WHERE 
 		object_id = id
 	   AND	state_time < starttime
@@ -28,10 +37,10 @@ WITH before AS (
 	LIMIT 1)
 	UNION ALL
 	(SELECT 2 AS prio
-		,state > 1 AS down
+		,state > crit.value AS down
 		,GREATEST(state_time,starttime) AS state_time_
 		,state
-	FROM icinga_statehistory 
+	FROM icinga_statehistory,crit 
 	WHERE 
 		object_id = id
 	   AND	state_time < starttime
@@ -43,10 +52,10 @@ WITH before AS (
 ),
 all_hard_events AS (
 	-- the actual range we're looking for:
-	SELECT state > 1 AS down
+	SELECT state > crit.value AS down
 		,state_time
 		,state
-	FROM icinga_statehistory 
+	FROM icinga_statehistory,crit
 	WHERE 
 		object_id = id
 	AND	state_time >= starttime
@@ -56,14 +65,15 @@ all_hard_events AS (
 
 after AS (
 	-- the "younger" of the current host/service state and the first recorded event
-	(SELECT state > 1 AS down
+	(SELECT state > crit_value AS down
 		,LEAST(state_time,endtime) AS state_time
 		,state
 		
 		 FROM (
 		(SELECT state_time
 			,state
-		FROM icinga_statehistory 
+			,crit.value crit_value
+		FROM icinga_statehistory,crit
 		WHERE 
 			object_id = id
 			AND	state_time > endtime
@@ -75,7 +85,8 @@ after AS (
 
 		SELECT status_update_time
 			,current_state
-		FROM icinga_hoststatus
+			,crit.value crit_value
+		FROM icinga_hoststatus,crit
 		WHERE host_object_id = id
 		AND     state_type = 1
 
@@ -83,7 +94,8 @@ after AS (
 
 		SELECT status_update_time
 			,current_state
-		FROM icinga_servicestatus
+			,crit.value crit_value
+		FROM icinga_servicestatus,crit
 		WHERE service_object_id = id
 		AND   state_type = 1
 	) AS after_searched_period 
@@ -127,12 +139,12 @@ after AS (
 	,tstzrange(state_time, COALESCE(lead(state_time) OVER w, endtime),'(]') AS zeitraum
 		--,lead(state_time) OVER w - state_time AS dauer
 	FROM (
-		SELECT state > 1 AS down
+		SELECT state > crit.value AS down
 		       , lead(state,1,state) OVER w > 1 AS next_down
 		       , lag(state,1,state) OVER w > 1 AS prev_down
 		       , state_time
 		       , state
-		FROM allevents 
+		FROM allevents,crit
 		WINDOW w AS (ORDER BY state_time)
 	) alle
 	--WHERE down != next_down OR down != prev_down

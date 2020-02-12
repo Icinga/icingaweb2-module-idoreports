@@ -1,3 +1,4 @@
+SELECT plan(0);
 CREATE TABLE icinga_statehistory (
     state_time timestamp with time zone,
     object_id numeric DEFAULT '0'::numeric,
