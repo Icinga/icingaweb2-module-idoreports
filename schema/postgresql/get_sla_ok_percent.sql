@@ -135,7 +135,7 @@ after AS (
 		FROM allevents 
 		WINDOW w AS (ORDER BY state_time)
 	) alle
-	WHERE down != next_down OR down != prev_down
+	--WHERE down != next_down OR down != prev_down
 	WINDOW w AS (ORDER BY state_time)
 )
 , relevant_down AS (
