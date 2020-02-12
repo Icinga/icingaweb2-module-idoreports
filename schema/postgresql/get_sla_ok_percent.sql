@@ -140,8 +140,8 @@ after AS (
 		--,lead(state_time) OVER w - state_time AS dauer
 	FROM (
 		SELECT state > crit.value AS down
-		       , lead(state,1,state) OVER w > 1 AS next_down
-		       , lag(state,1,state) OVER w > 1 AS prev_down
+		       , lead(state,1,state) OVER w > crit.value AS next_down
+		       , lag(state,1,state) OVER w > crit.value AS prev_down
 		       , state_time
 		       , state
 		FROM allevents,crit
