@@ -16,5 +16,7 @@ COPY icinga_statehistory FROM STDIN;
 2019-03-01 00:00:00+01	2	0	1
 2019-03-05 11:00:00+01	2	3	0
 2019-03-05 12:00:00+01	2	3	1
+2019-03-10 16:05:00+01	3	1	0
+2019-03-10 16:10:00+01	3	1	1
 \.
-SELECT is(count(*), 16::bigint, 'icinga_statehistory has 16 rows') FROM icinga_statehistory;
+SELECT is(count(*), 18::bigint, 'icinga_statehistory has 18 rows') FROM icinga_statehistory;
