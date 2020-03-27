@@ -111,7 +111,7 @@ after AS (
 	TABLE after
 )
 , downtimes AS (
-	SELECT tstzrange(
+	SELECT tsrange(
 			--GREATEST(actual_start_time, starttime)
 			--, LEAST(actual_end_time, endtime)
 			actual_start_time
@@ -124,7 +124,7 @@ after AS (
 
 	UNION ALL
 
-	SELECT tstzrange(
+	SELECT tsrange(
 			--GREATEST(start_time, starttime)
 			--, LEAST(end_time, endtime)
 			start_time
@@ -136,9 +136,9 @@ after AS (
 )
 
 --SELECT * FROM allevents;
-, relevant AS (
+, enriched AS (
 	SELECT down
-	,tstzrange(state_time, COALESCE(lead(state_time) OVER w, endtime),'(]') AS zeitraum
+	,tsrange(state_time, COALESCE(lead(state_time) OVER w, endtime),'(]') AS zeitraum
 		--,lead(state_time) OVER w - state_time AS dauer
 	FROM (
 		SELECT state > crit.value AS down
@@ -151,7 +151,12 @@ after AS (
 	) alle
 	--WHERE down != next_down OR down != prev_down
 	WINDOW w AS (ORDER BY state_time)
-)
+) 
+, relevant AS (
+    SELECT * FROM enriched 
+    WHERE zeitraum && tsrange(starttime,endtime,'(]')
+) --SELECT * FROM relevant;
+
 , relevant_down AS (
 	SELECT *
 		,zeitraum * downtime AS covered 
