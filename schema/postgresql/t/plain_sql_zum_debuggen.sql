@@ -1,24 +1,28 @@
-\set id 1
-\set start '2019-02-05 13:00'
-\set end '2019-02-06 13:00'
+\set id 3
+\set start '2019-03-10 17:00'
+\set end '2019-03-11 00:00'
 \set sla_id null 
 
 --'2019-02-19 00:00:00','2019-02-20 10:00:00'
 --12347
 
-WITH before AS (
+WITH crit AS (
+	SELECT CASE objecttype_id
+		WHEN 1 THEN 0
+		WHEN 2 THEN 1
+		END
+	AS value
+	FROM icinga_objects 
+	WHERE object_id = :id
+),
+before AS (
 	-- low border, last event before the range we are looking for:
-	SELECT prio ,
-		 state > 1 AS down, state_time_ AS state_time,state
-		--,state_type, state_time
-	       
-	FROM (
+	SELECT down, state_time_ AS state_time,state FROM (
 	(SELECT 1 AS prio
-		,state_time 
+		,state > crit.value AS down
 		,GREATEST(state_time,:'start') AS state_time_
 		,state
-		,state_type
-	FROM icinga_statehistory 
+	FROM icinga_statehistory,crit
 	WHERE 
 		object_id = :id
 	   AND	state_time < :'start'
@@ -27,27 +31,25 @@ WITH before AS (
 	LIMIT 1)
 	UNION ALL
 	(SELECT 2 AS prio
-		,state_time 
+		,state > crit.value AS down
 		,GREATEST(state_time,:'start') AS state_time_
 		,state
-		,state_type
-	FROM icinga_statehistory 
+	FROM icinga_statehistory,crit 
 	WHERE 
 		object_id = :id
 	   AND	state_time < :'start'
 	ORDER BY state_time DESC
 	LIMIT 1)
 
-	) ranked ORDER BY prio ASC 
+	) ranked ORDER BY prio 
 	LIMIT 1
 )  --SELECT * FROM before;
 ,all_hard_events AS (
 	-- the actual range we're looking for:
-	SELECT 5 prio, 
-		state > 1 AS down
+	SELECT state > crit.value AS down
 		,state_time
 		,state
-	FROM icinga_statehistory 
+	FROM icinga_statehistory,crit
 	WHERE 
 		object_id = :id
 	AND	state_time >= :'start'
@@ -57,15 +59,15 @@ WITH before AS (
 
 after AS (
 	-- the "younger" of the current host/service state and the first recorded event
-	SELECT prio, state > 1 AS down
+	(SELECT state > crit_value AS down
 		,LEAST(state_time,:'end') AS state_time
 		,state
 		
 		 FROM (
-		(SELECT 7 prio,
-			state_time
+		(SELECT state_time
 			,state
-		FROM icinga_statehistory 
+			,crit.value crit_value
+		FROM icinga_statehistory,crit
 		WHERE 
 			object_id = :id
 		AND	state_time > :'end'
@@ -75,24 +77,24 @@ after AS (
 
 		UNION ALL
 
-		SELECT 9 prio,
-			status_update_time
+		SELECT status_update_time
 			,current_state
-		FROM icinga_hoststatus
+			,crit.value crit_value
+		FROM icinga_hoststatus,crit
 		WHERE host_object_id = :id
 		AND     state_type = 1
 
 		UNION ALL
 
-		SELECT 10 prio,
-			status_update_time
+		SELECT status_update_time
 			,current_state
-		FROM icinga_servicestatus
+			,crit.value crit_value
+		FROM icinga_servicestatus,crit
 		WHERE service_object_id = :id
 		AND   state_type = 1
 	) AS after_searched_period 
-	ORDER BY state_time ASC LIMIT 1
-) --SELECT * FROM after; 
+	ORDER BY state_time ASC LIMIT 1)
+)
 , allevents AS (
 	TABLE before 
 	UNION ALL
@@ -101,7 +103,7 @@ after AS (
 	TABLE after
 ) --SELECT * FROM allevents; 
 , downtimes AS (
-	SELECT tstzrange(
+	SELECT tsrange(
 			--GREATEST(actual_start_time, :'start')
 		      --, LEAST(actual_end_time, :'end')
 			actual_start_time
@@ -114,7 +116,7 @@ after AS (
 
 	UNION ALL
 
-	SELECT tstzrange(
+	SELECT tsrange(
 			--GREATEST(start_time, :'start')
 		      --, LEAST(end_time, :'end')
 			start_time
@@ -125,22 +127,28 @@ after AS (
 
 )
 
-, relevant AS (
+--SELECT * FROM allevents;
+, enriched AS (
 	SELECT down
-	,tstzrange(state_time, COALESCE(lead(state_time) OVER w, :'end'),'(]') AS zeitraum
+	,tsrange(state_time, COALESCE(lead(state_time) OVER w, :'end'),'(]') AS zeitraum
 		--,lead(state_time) OVER w - state_time AS dauer
 	FROM (
-		SELECT state > 1 AS down
-		       , lead(state,1,state) OVER w > 1 AS next_down
-		       , lag(state,1,state) OVER w > 1 AS prev_down
+		SELECT state > crit.value AS down
+		       , lead(state,1,state) OVER w > crit.value AS next_down
+		       , lag(state,1,state) OVER w > crit.value AS prev_down
 		       , state_time
 		       , state
-		FROM allevents 
+		FROM allevents,crit
 		WINDOW w AS (ORDER BY state_time)
 	) alle
-	WHERE down != next_down OR down != prev_down
+	--WHERE down != next_down OR down != prev_down
 	WINDOW w AS (ORDER BY state_time)
+) 
+, relevant AS (
+    SELECT * FROM enriched 
+    WHERE zeitraum && tsrange(:'start',:'end','(]')
 ) --SELECT * FROM relevant;
+
 , relevant_down AS (
 	SELECT *
 		,zeitraum * downtime AS covered 
@@ -162,13 +170,13 @@ after AS (
 
 , final_result AS (
 	SELECT sum(dauer) AS total_downtime
-		, timestamptz :'end' - timestamptz :'start' AS considered
+		, timestamp :'end' - timestamp :'start' AS considered
 		, COALESCE(extract ('epoch' from sum(dauer)),0) AS down_secs
-		, extract ('epoch' from timestamptz :'end' - timestamptz  :'start' ) AS considered_secs
+		, extract ('epoch' from timestamp :'end' - timestamp  :'start' ) AS considered_secs
 	FROM effective_downtimes
 ) --SELECT * FROM final_result;
 
-SELECT *
+SELECT :'start' AS starttime, :'end' AS endtime,*
 , 100.0 - down_secs / considered_secs * 100.0 AS availability
 FROM final_result
 ;
