@@ -9,11 +9,10 @@ Which were basically due to a badly chosen ALIAS ("state_time" on line 20, which
 I run these tests on an Ubuntu/Debian system with "pg_virtualenv" like this:
 
 ```
-pg_virtualenv pg_prove t/0*.sql
+pg_virtualenv -s pg_prove t/0*.sql
+```
+or simply
+```
+t/testme.sh
 ```
 
-N.B.: They deliberately fail (also, t/06-get_sla_ok_percent.sql is just a symlink to the "real thing", so adding a plan() call would break stuff)!
-
-The only relevant part is "07-test-func.sql", which obviously should _not_ fail. 
-
-Having an overall fail allows to look into the db by simply adding "-s" to the pg_virtualenv call above.
