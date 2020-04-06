@@ -124,7 +124,7 @@ after AS (
 )
 , enriched AS (
 	SELECT down
-	,tsrange(state_time, COALESCE(lead(state_time) OVER w, endtime),'(]') AS zeitraum
+	,tsrange(state_time, COALESCE(lead(state_time) OVER w, endtime),'(]') AS timeframe
 		--,lead(state_time) OVER w - state_time AS dauer
 	FROM (
 		SELECT state > crit.value AS down
@@ -139,20 +139,20 @@ after AS (
 ) 
 , relevant AS (
     SELECT down 
-    	,zeitraum * tsrange(starttime,endtime,'(]') AS zeitraum
+    	,timeframe * tsrange(starttime,endtime,'(]') AS timeframe
     FROM enriched 
-    WHERE zeitraum && tsrange(starttime,endtime,'(]')
+    WHERE timeframe && tsrange(starttime,endtime,'(]')
 )
 , relevant_down AS (
 	SELECT *
-		,zeitraum * downtime AS covered 
+		,timeframe * downtime AS covered 
 		,COALESCE(
-			zeitraum - downtime
-		       ,zeitraum
+			timeframe - downtime
+		       ,timeframe
 		) AS not_covered
 	FROM relevant
 	LEFT JOIN downtimes 
-	  ON zeitraum && downtime
+	  ON timeframe && downtime
 	WHERE down
 ) 
 , effective_downtimes AS (

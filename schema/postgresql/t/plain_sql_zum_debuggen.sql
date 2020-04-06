@@ -130,7 +130,7 @@ after AS (
 ) --SELECT * FROM allevents;
 , enriched AS (
 	SELECT down
-	,tsrange(state_time, COALESCE(lead(state_time) OVER w, :'end'),'(]') AS zeitraum
+	,tsrange(state_time, COALESCE(lead(state_time) OVER w, :'end'),'(]') AS timeframe
 		--,lead(state_time) OVER w - state_time AS dauer
 	FROM (
 		SELECT state > crit.value AS down
@@ -146,22 +146,22 @@ after AS (
 ) 
 , relevant AS (
     SELECT down 
-    	,zeitraum * tsrange(:'start',:'end','(]') AS zeitraum
+    	,timeframe * tsrange(:'start',:'end','(]') AS timeframe
 	FROM enriched 
-    WHERE zeitraum && tsrange(:'start',:'end','(]')
+    WHERE timeframe && tsrange(:'start',:'end','(]')
 ) SELECT * FROM relevant;
 
 , relevant_down AS (
-	SELECT zeitraum 
+	SELECT timeframe 
 		,down
-		,zeitraum * downtime AS covered 
+		,timeframe * downtime AS covered 
 		,COALESCE(
-			zeitraum - downtime
-		       ,zeitraum
+			timeframe - downtime
+		       ,timeframe
 		) AS not_covered
 	FROM relevant
 	LEFT JOIN downtimes 
-	  ON zeitraum && downtime
+	  ON timeframe && downtime
 	WHERE down
 ) -- SELECT * FROM relevant_down;
 
