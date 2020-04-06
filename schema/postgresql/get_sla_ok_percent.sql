@@ -138,7 +138,9 @@ after AS (
 	WINDOW w AS (ORDER BY state_time)
 ) 
 , relevant AS (
-    SELECT * FROM enriched 
+    SELECT down 
+    	,zeitraum * tsrange(starttime,endtime,'(]') AS zeitraum
+    FROM enriched 
     WHERE zeitraum && tsrange(starttime,endtime,'(]')
 )
 , relevant_down AS (

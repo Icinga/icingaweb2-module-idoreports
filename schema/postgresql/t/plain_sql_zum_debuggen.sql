@@ -1,6 +1,8 @@
-\set id 6
-\set start '2019-04-01 11:43:16'
-\set end '2019-04-01 15:43:16'
+--SELECT is(idoreports_get_sla_ok_percent(4,'2020-03-01 12:00', '2020-03-01 16:00')::float , 50.0::float,'Host 4 was considered down for 2 hours in a 4 hours time range starting with UP');
+--SELECT is(idoreports_get_sla_ok_percent(5,'2020-04-01 12:00', '2020-04-01 16:00')::float , 50.0::float,'Host 5 was considered down for 2 hours in a 4 hours time range starting with DOWN');
+\set id 5
+\set start '2020-04-01 12:00'
+\set end '2020-04-01 16:00'
 \set sla_id null 
 
 --'2019-02-19 00:00:00','2019-02-20 10:00:00'
@@ -43,7 +45,7 @@ before AS (
 
 	) ranked ORDER BY prio 
 	LIMIT 1
-)  --SELECT * FROM before;
+)  SELECT * FROM before;
 ,all_hard_events AS (
 	-- the actual range we're looking for:
 	SELECT state > crit.value AS down
@@ -125,9 +127,7 @@ after AS (
 	FROM icinga_outofsla_periods
         WHERE timeperiod_object_id = :sla_id
 
-)
-
---SELECT * FROM allevents;
+) --SELECT * FROM allevents;
 , enriched AS (
 	SELECT down
 	,tsrange(state_time, COALESCE(lead(state_time) OVER w, :'end'),'(]') AS zeitraum
@@ -145,12 +145,15 @@ after AS (
 	WINDOW w AS (ORDER BY state_time)
 ) 
 , relevant AS (
-    SELECT * FROM enriched 
+    SELECT down 
+    	,zeitraum * tsrange(:'start',:'end','(]') AS zeitraum
+	FROM enriched 
     WHERE zeitraum && tsrange(:'start',:'end','(]')
-) --SELECT * FROM relevant;
+) SELECT * FROM relevant;
 
 , relevant_down AS (
-	SELECT *
+	SELECT zeitraum 
+		,down
 		,zeitraum * downtime AS covered 
 		,COALESCE(
 			zeitraum - downtime
@@ -160,7 +163,7 @@ after AS (
 	LEFT JOIN downtimes 
 	  ON zeitraum && downtime
 	WHERE down
-) --SELECT * FROM relevant_down;
+) -- SELECT * FROM relevant_down;
 
 , effective_downtimes AS (
 	SELECT not_covered

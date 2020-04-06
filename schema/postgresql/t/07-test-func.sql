@@ -1,4 +1,4 @@
-SELECT plan(25);
+SELECT plan(24);
 SELECT is(idoreports_get_sla_ok_percent(1,'2019-02-05 12:00', '2019-02-05 14:00')::float , 0.0::float,'Host 1 was down 2 out of 2 hours');
 SELECT is(idoreports_get_sla_ok_percent(1,'2019-02-05 10:00', '2019-02-05 14:00')::float , 50.0::float,'Host 1 was down 2 out of 4 hours');
 SELECT is(idoreports_get_sla_ok_percent(1,'2019-02-05 10:00', '2019-02-05 18:00')::float , 75.0::float,'Host 1 was down 2 out of 8 hours');
