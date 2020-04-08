@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION idoreports_get_sla_ok_percent(
 	starttime TIMESTAMP WITHOUT TIME ZONE,
 	endtime  TIMESTAMP WITHOUT TIME ZONE,
 	sla_id INTEGER DEFAULT NULL
-) 
+)
 RETURNS float
 LANGUAGE SQL
 AS $$
@@ -16,7 +16,7 @@ WITH crit AS (
 		WHEN 2 THEN 1
 		END
 	AS value
-	FROM icinga_objects 
+	FROM icinga_objects
 	WHERE object_id = id
 ),
 before AS (
@@ -27,7 +27,7 @@ before AS (
 		,GREATEST(state_time,starttime) AS state_time_
 		,state
 	FROM icinga_statehistory,crit
-	WHERE 
+	WHERE
 		object_id = id
 	   AND	state_time < starttime
 	   AND  state_type = 1
@@ -38,14 +38,14 @@ before AS (
 		,state > crit.value AS down
 		,GREATEST(state_time,starttime) AS state_time_
 		,state
-	FROM icinga_statehistory,crit 
-	WHERE 
+	FROM icinga_statehistory,crit
+	WHERE
 		object_id = id
 	   AND	state_time < starttime
 	ORDER BY state_time DESC
 	LIMIT 1)
 
-	) ranked ORDER BY prio 
+	) ranked ORDER BY prio
 	LIMIT 1
 ),
 all_hard_events AS (
@@ -54,7 +54,7 @@ all_hard_events AS (
 		,state_time
 		,state
 	FROM icinga_statehistory,crit
-	WHERE 
+	WHERE
 		object_id = id
 	AND	state_time >= starttime
 	AND 	state_time <= endtime
@@ -65,13 +65,13 @@ after AS (
 	(SELECT state > crit_value AS down
 		,LEAST(state_time,endtime) AS state_time
 		,state
-		
+
 		 FROM (
 		(SELECT state_time
 			,state
 			,crit.value crit_value
 		FROM icinga_statehistory,crit
-		WHERE 
+		WHERE
 			object_id = id
 			AND	state_time > endtime
 		AND     state_type = 1
@@ -95,11 +95,11 @@ after AS (
 		FROM icinga_servicestatus,crit
 		WHERE service_object_id = id
 		AND   state_type = 1
-	) AS after_searched_period 
+	) AS after_searched_period
 	ORDER BY state_time ASC LIMIT 1)
 )
 , allevents AS (
-	TABLE before 
+	TABLE before
 	UNION ALL
 	TABLE all_hard_events
 	UNION ALL
@@ -136,25 +136,25 @@ after AS (
 		WINDOW w AS (ORDER BY state_time)
 	) alle
 	WINDOW w AS (ORDER BY state_time)
-) 
+)
 , relevant AS (
-    SELECT down 
+    SELECT down
     	,timeframe * tsrange(starttime,endtime,'(]') AS timeframe
-    FROM enriched 
+    FROM enriched
     WHERE timeframe && tsrange(starttime,endtime,'(]')
 )
 , relevant_down AS (
 	SELECT *
-		,timeframe * downtime AS covered 
+		,timeframe * downtime AS covered
 		,COALESCE(
 			timeframe - downtime
 		       ,timeframe
 		) AS not_covered
 	FROM relevant
-	LEFT JOIN downtimes 
+	LEFT JOIN downtimes
 	  ON timeframe && downtime
 	WHERE down
-) 
+)
 , effective_downtimes AS (
 	SELECT not_covered
 		, upper(not_covered) - lower(not_covered) AS dauer
