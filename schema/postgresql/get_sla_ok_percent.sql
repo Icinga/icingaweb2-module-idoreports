@@ -107,7 +107,7 @@ WITH
                             AND state_time > endtime
                             AND state_type = 1
                         ORDER BY
-                            state_time ASC
+                            state_time
                         LIMIT 1
                     )
                     UNION ALL
@@ -138,7 +138,7 @@ WITH
                     )
                 ) AS after_searched_period
             ORDER BY
-                state_time ASC
+                state_time
             LIMIT 1
         )
     ),
