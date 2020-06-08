@@ -4,15 +4,15 @@
 
 * Icinga Web 2 (&gt;= 2.6)
 * PHP (&gt;= 5.6, preferably 7.x)
-* MySQL or MariaDB
+* MySQL, MariaDB or PostgreSQL
 * Icinga Web 2 modules:
   * [reporting](https://github.com/Icinga/icingaweb2-module-reporting) (>= 0.9)
 
 ## Database Setup
 
-The module ships with database functions for calculating the host and service availability in `etc/schema/`.
+### MySQL / MariaDB
 
-### Grant Required Privileges
+#### Grant Required Privileges
 
 Skip this step if you used the database configuration wizard during the Icinga 2 installation.
 
@@ -31,8 +31,9 @@ GRANT CREATE, CREATE ROUTINE, ALTER ROUTINE, EXECUTE ON icinga2.* TO 'icinga2'@'
 
 Please adapt the host, database and username to your environment.
 
-### Import Database Files
+#### Import Database Files
 
+The module ships with database functions for calculating the host and service availability in `etc/schema/mysql`.
 Please import those files into your Icinga database.
 
 The following example assumes that your Icinga database and user is named **icinga2**:
@@ -40,6 +41,22 @@ The following example assumes that your Icinga database and user is named **icin
 ```
 mysql -p -u icinga2 icinga2 < schema/mysql/slaperiods.sql
 mysql -p -u icinga2 icinga2 < schema/mysql/get_sla_ok_percent.sql
+```
+
+Please adapt the database and username to your environment.
+
+### PostgreSQL
+
+#### Import Database Files
+
+The module ships with database functions for calculating the host and service availability in `etc/schema/postgresql`.
+Please import those files into your Icinga database.
+
+The following example assumes that your Icinga database and user is named **icinga2**:
+
+```
+psql -U icinga2 icinga2 < schema/postgresql/slaperiods.sql
+psql -U icinga2 icinga2 < schema/postgresql/get_sla_ok_percent.sql
 ```
 
 Please adapt the database and username to your environment.
