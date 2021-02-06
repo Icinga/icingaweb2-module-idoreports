@@ -48,9 +48,9 @@ class HostUptimeReport extends IdoReport
 	$s = ((($seconds % 31536000) % 86400) % 3600) % 60;
 	if ( $y > 0 ) return $y . " y " .  $d . " d " . $h . " h " . $i . " m " . $s . " s";
 	if ( $d > 0 ) return $d . " d " . $h . " h " . $i . " m " . $s . " s";
-	if ( $y > 0 ) return $h . " h " . $i . " m " . $s . " s";
-	if ( $y > 0 ) return $i . " m " . $s . " s";
-	if ( $y > 0 ) return $s . " s";
+	if ( $h > 0 ) return $h . " h " . $i . " m " . $s . " s";
+	if ( $i > 0 ) return $i . " m " . $s . " s";
+	if ( $s > 0 ) return $s . " s";
     }
 
     protected function fetchHostUptime(Timerange $timerange, array $config)
