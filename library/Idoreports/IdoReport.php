@@ -27,8 +27,10 @@ abstract class IdoReport extends ReportHook
 
     public function getHtml(Timerange $timerange, array $config = null)
     {
-        $data = $this->fetchSla($timerange, $config);
-
+	$data = [];
+	$data[] = $this->fetchSla($timerange, $config);
+	$data[] = $this->fetchUptime($timerange, $config);
+	
         if (! count($data)) {
             return Html::tag('p', 'No data found.');
         }
@@ -37,17 +39,22 @@ abstract class IdoReport extends ReportHook
 
         $tableHeaderCells = [];
 
-        foreach ($data->getDimensions() as $dimension) {
+	foreach ($data[0]->getDimensions() as $dimension) {
             $tableHeaderCells[] = Html::tag('th', null, $dimension);
         }
 
-        foreach ($data->getValues() as $value) {
+	if(isset($data[1])){
+		foreach ($data[1]->getValues() as $value) {
+        	    $tableHeaderCells[] = Html::tag('th', null, $value);
+	        }
+	}
+
+	foreach ($data[0]->getValues() as $value) {
             $tableHeaderCells[] = Html::tag('th', null, $value);
         }
 
-        $tableRows = [];
-
-        foreach ($data->getRows() as $row) {
+	$tableRows = [];
+        foreach ($data[0]->getRows() as $idx => $row) {
             $cells = [];
 
             foreach ($row->getDimensions() as $dimension) {
@@ -55,7 +62,7 @@ abstract class IdoReport extends ReportHook
             }
 
             // We only have one metric
-            $sla = $row->getValues()[0];
+	    $sla = $row->getValues()[0];
 
             if ($sla < $threshold) {
                 $slaClass = 'nok';
@@ -63,13 +70,17 @@ abstract class IdoReport extends ReportHook
                 $slaClass = 'ok';
             }
 
+	    if (isset($data[1])){
+		    $outage = $data[1]->getRows()[$idx]->getValues()[0];
+        	    $cells[] = Html::tag('td', $outage);
+	    }
             $cells[] = Html::tag('td', ['class' => "sla-column $slaClass"], \round($sla, 2));
 
             $tableRows[] = Html::tag('tr', null, $cells);
         }
 
         // We only have one average
-        $average = $data->getAverages()[0];
+        $average = $data[0]->getAverages()[0];
 
         if ($average < $threshold) {
             $slaClass = 'nok';
@@ -77,10 +88,17 @@ abstract class IdoReport extends ReportHook
             $slaClass = 'ok';
         }
 
-        $tableRows[] = Html::tag('tr', null, [
-            Html::tag('td', ['colspan' => count($data->getDimensions())], 'Total'),
-            Html::tag('td', ['class' => "sla-column $slaClass"], \round($average, 2))
-        ]);
+	if(isset($data[1])){
+	        $tableRows[] = Html::tag('tr', null, [
+        	    Html::tag('td', ['colspan' => count($data[0]->getDimensions())+1], 'Total'),
+	            Html::tag('td', ['class' => "sla-column $slaClass"], \round($average, 2)),
+        	]);
+	}else{
+		$tableRows[] = Html::tag('tr', null, [
+                    Html::tag('td', ['colspan' => count($data[0]->getDimensions())], 'Total'),
+                    Html::tag('td', ['class' => "sla-column $slaClass"], \round($average, 2)),
+                ]);
+	}
 
         $table = Html::tag(
             'table',
@@ -109,6 +127,7 @@ abstract class IdoReport extends ReportHook
      * @return  ReportData
      */
     abstract protected function fetchSla(Timerange $timerange, array $config = null);
+    abstract protected function fetchUptime(Timerange $timerange, array $config = null);
 
     protected function applyFilterAndRestrictions($filter, Filterable $filterable)
     {

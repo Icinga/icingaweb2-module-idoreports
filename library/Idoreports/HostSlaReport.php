@@ -41,6 +41,7 @@ class HostSlaReport extends IdoReport
         ]);
     }
 
+    protected function fetchUptime(Timerange $timerange, array $config = null){}
     protected function fetchSla(Timerange $timerange, array $config = null)
     {
         $rd = new ReportData();
