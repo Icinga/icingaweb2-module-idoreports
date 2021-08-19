@@ -138,7 +138,7 @@ SELECT
   -- next_state is the state from now on, so it replaces @last_state:
   CASE
   -- Set our next @last_state if we have a hard state change
-  WHEN type IN ('hard_state', 'former_state', 'future_state', 'current_state') THEN @last_state := state
+  WHEN type IN ('hard_state', 'former_state', 'current_state') THEN @last_state := state
   -- ...or if there is a soft_state and no @last_state has been seen before
   WHEN type = 'soft_state' THEN
     -- If we don't have a @last_state...
@@ -208,21 +208,6 @@ UNION SELECT * FROM (
   LIMIT 1
 ) formerstate
 -- END fetching last state BEFORE the given interval as an event
-
--- START fetching first state AFTER the given interval as an event
-UNION SELECT * FROM (
-  SELECT
-    -- @start AS state_time,
-    @end AS state_time,
-    'future_state' AS type,
-    CASE state_type WHEN 1 THEN last_state ELSE last_hard_state END AS state,
-    CASE state_type WHEN 1 THEN state ELSE last_hard_state END AS last_state
-  FROM icinga_statehistory h
-  WHERE object_id = @id
-    AND state_time > @end
-  ORDER BY h.state_time ASC LIMIT 1
-) futurestate
--- END fetching first state AFTER the given interval as an event
 
 -- START ADDING a fake end
 UNION SELECT
@@ -320,13 +305,12 @@ WHERE timeperiod_object_id = @sla_timeperiod_object_id
 
 ORDER BY state_time ASC,
   CASE type
-  -- Order is important. current_state, future_state and former_state
+  -- Order is important. current_state and former_state
   -- are potential candidates for the initial state of the chosen period.
   -- the last one wins, and preferably we have a state change before the
   -- chosen period. Otherwise we assume that the first state change after
   -- that period knows about the former state. Last fallback is the
   WHEN 'current_state' THEN 0
-  WHEN 'future_state' THEN 1
   WHEN 'former_state' THEN 2
   WHEN 'soft_state' THEN 3
   WHEN 'hard_state' THEN 4
