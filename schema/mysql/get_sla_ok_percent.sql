@@ -47,7 +47,7 @@ BEGIN
     RETURN NULL;
   END IF;
 
-SELECT sla_ok_percent INTO result FROM (
+SELECT CASE WHEN @last_state IS NULL THEN NULL ELSE sla_ok_percent END INTO result FROM (
 SELECT
   @sla_ok_seconds := SUM(
     CASE
