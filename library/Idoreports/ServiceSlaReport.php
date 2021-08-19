@@ -69,6 +69,10 @@ class ServiceSlaReport extends IdoReport
 
             foreach ($this->yieldTimerange($timerange, $interval) as list($start, $end)) {
                 foreach ($this->fetchServiceSla(new Timerange($start, $end), $config) as $row) {
+                    if ($row->sla === null) {
+                        continue;
+                    }
+
                     $rows[] = (new ReportRow())
                         ->setDimensions([$row->host_display_name, $row->service_display_name, $start->format($format)])
                         ->setValues([(float) $row->sla]);
