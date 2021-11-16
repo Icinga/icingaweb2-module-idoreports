@@ -1,31 +1,3 @@
-create or replace function range_exclude(
-    anyrange,
-    anyrange
-) returns anyarray
-as
-$$
-declare
-    r1 text;
-    r2 text;
-begin
-    if $2 is null then return array [$1]; end if;
-
-    -- If result is single element
-    if ($1 &< $2 or $1 &> $2) then return array [$1 - $2]; end if;
-
-    -- Else build array of two intervals
-    if lower_inc($1) then r1 := '['; else r1 := '('; end if;
-    r1 := r1 || lower($1) || ',' || lower($2);
-    if lower_inc($2) then r1 := r1 || ')'; else r1 := r1 || ']'; end if;
-
-    if upper_inc($2) then r2 := '('; else r2 := '['; end if;
-    r2 := r2 || upper($2) || ',' || upper($1);
-    if upper_inc($1) then r2 := r2 || ']'; else r2 := r2 || ')'; end if;
-    return array [CAST(r1 AS typeof($1)), CAST(r2 AS typeof($2))];
-end
-$$
-    immutable language plpgsql;
-
 DROP FUNCTION IF EXISTS idoreports_get_sla_ok_percent(BIGINT, TIMESTAMPTZ, TIMESTAMPTZ, INT);
 
 CREATE OR REPLACE FUNCTION idoreports_get_sla_ok_percent(
