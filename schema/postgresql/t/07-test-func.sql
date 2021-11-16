@@ -1,4 +1,4 @@
-SELECT plan(26);
+SELECT plan(27);
 SELECT is(idoreports_get_sla_ok_percent(1,'2019-02-05 12:00', '2019-02-05 14:00')::float , 0.0::float,'Host 1 was down 2 out of 2 hours');
 SELECT is(idoreports_get_sla_ok_percent(1,'2019-02-05 10:00', '2019-02-05 14:00')::float , 50.0::float,'Host 1 was down 2 out of 4 hours');
 SELECT is(idoreports_get_sla_ok_percent(1,'2019-02-05 10:00', '2019-02-05 18:00')::float , 75.0::float,'Host 1 was down 2 out of 8 hours');
@@ -28,5 +28,6 @@ SELECT is(idoreports_get_sla_ok_percent(5,'2020-04-01 12:00', '2020-04-01 16:00'
 
 SELECT is(idoreports_get_sla_ok_percent(6,'2019-04-01 11:43:16','2019-04-01 15:43:16')::float , 46.65972222222222::float,'Host 6 was down until recently');
 
-SELECT is(idoreports_get_sla_ok_percent(7,'2019-04-15 00:00:00','2019-04-15 11:59:00')::float , 100.0::float,'Host 7 had a planned downtime and that did not break the function');
-SELECT is(idoreports_get_sla_ok_percent(7,'2019-04-15 00:00:00','2019-04-16 00:00:00')::float , 100.0::float,'Host 7 had two planned downtime and that did not break the function');
+SELECT is(idoreports_get_sla_ok_percent(7,'2019-04-14 00:00:00','2019-04-15 15:00:00')::float , 100.0::float,'Host 7 had a planned downtime but went down before that started ');
+SELECT is(idoreports_get_sla_ok_percent(7,'2019-04-14 00:00:00','2019-04-15 11:59:00')::float , 100.0::float,'Host 7 had a planned downtime and that did not break the function');
+SELECT is(idoreports_get_sla_ok_percent(7,'2019-04-14 00:00:00','2019-04-16 00:00:00')::float , 100.0::float,'Host 7 had two planned downtime and that did not break the function');
