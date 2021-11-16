@@ -1,3 +1,37 @@
+create or replace function range_exclude(
+    anyelement,
+    anyelement
+) returns anyarray
+as
+$$
+declare
+    r1 text;
+    r2 text;
+begin
+    -- Check input parameters
+    if not pg_typeof($1) in ('numrange'::regtype, 'int8range'::regtype, 'daterange'::regtype, 'tsrange'::regtype,
+                             'tstzrange'::regtype) then
+        raise exception 'Function accepts only range types but got % type.', pg_typeof($1);
+    end if;
+
+    if $2 is null then return array [$1]; end if;
+
+    -- If result is single element
+    if ($1 &< $2 or $1 &> $2) then return array [$1 - $2]; end if;
+
+    -- Else build array of two intervals
+    if lower_inc($1) then r1 := '['; else r1 := '('; end if;
+    r1 := r1 || lower($1) || ',' || lower($2);
+    if lower_inc($2) then r1 := r1 || ')'; else r1 := r1 || ']'; end if;
+
+    if upper_inc($2) then r2 := '('; else r2 := '['; end if;
+    r2 := r2 || upper($2) || ',' || upper($1);
+    if upper_inc($1) then r2 := r2 || ']'; else r2 := r2 || ')'; end if;
+    return array [r1, r2];
+end
+$$
+    immutable language plpgsql;
+
 DROP FUNCTION IF EXISTS idoreports_get_sla_ok_percent(BIGINT, TIMESTAMPTZ, TIMESTAMPTZ, INT);
 
 CREATE OR REPLACE FUNCTION idoreports_get_sla_ok_percent(
@@ -198,7 +232,7 @@ WITH
     relevant_down AS (
         SELECT *,
             timeframe * downtime AS covered,
-            COALESCE(timeframe - downtime, timeframe) AS not_covered
+            unnest(range_exclude(timeframe, downtime)) AS not_covered
         FROM
             relevant
                 LEFT JOIN downtimes ON timeframe && downtime
