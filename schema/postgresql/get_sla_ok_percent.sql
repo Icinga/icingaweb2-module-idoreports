@@ -1,6 +1,6 @@
 create or replace function range_exclude(
-    anyelement,
-    anyelement
+    anyrange,
+    anyrange
 ) returns anyarray
 as
 $$
@@ -8,12 +8,6 @@ declare
     r1 text;
     r2 text;
 begin
-    -- Check input parameters
-    if not pg_typeof($1) in ('numrange'::regtype, 'int8range'::regtype, 'daterange'::regtype, 'tsrange'::regtype,
-                             'tstzrange'::regtype) then
-        raise exception 'Function accepts only range types but got % type.', pg_typeof($1);
-    end if;
-
     if $2 is null then return array [$1]; end if;
 
     -- If result is single element
@@ -27,7 +21,7 @@ begin
     if upper_inc($2) then r2 := '('; else r2 := '['; end if;
     r2 := r2 || upper($2) || ',' || upper($1);
     if upper_inc($1) then r2 := r2 || ']'; else r2 := r2 || ')'; end if;
-    return array [r1, r2];
+    return array [CAST(r1 AS typeof($1)), CAST(r2 AS typeof($2))];
 end
 $$
     immutable language plpgsql;
@@ -229,31 +223,37 @@ WITH
         WHERE
             timeframe && tsrange(starttime, endtime, '(]')
     ),
+    covered AS (
+        SELECT 
+               upper(covered_by_downtime) - lower(covered_by_downtime) AS dauer
+        FROM (
+          SELECT
+              timeframe * downtime AS covered_by_downtime
+          FROM
+              relevant
+                  LEFT JOIN downtimes ON timeframe && downtime
+          WHERE
+              down
+       ) AS foo
+    ),
     relevant_down AS (
         SELECT *,
-            timeframe * downtime AS covered,
-            unnest(range_exclude(timeframe, downtime)) AS not_covered
+            upper(timeframe) - lower(timeframe) AS dauer
         FROM
             relevant
-                LEFT JOIN downtimes ON timeframe && downtime
         WHERE
             down
     ),
-    effective_downtimes AS (
-        SELECT
-            not_covered,
-            upper(not_covered) - lower(not_covered) AS dauer
-        FROM
-            relevant_down
-    ),
     final_result AS (
         SELECT
-            sum(dauer) AS total_downtime,
+            sum(dauer) - (
+		SELECT sum(dauer) FROM covered
+	    ) AS total_downtime,
             endtime - starttime AS considered,
             COALESCE(extract('epoch' from sum(dauer)), 0) AS down_secs,
             extract('epoch' from endtime - starttime) AS considered_secs
         FROM
-            effective_downtimes
+            relevant_down
     )
 
 SELECT
