@@ -8,6 +8,10 @@ COPY icinga_hoststatus FROM STDIN;
 5	2020-04-01 14:00:00+01	0	1
 6	2019-04-01 13:51:17+01	0	1
 7	2019-04-01 13:51:17+01	0	1
+7	2019-04-15 11:50:00+01	1	1
+7	2019-04-15 11:52:00+01	0	1
+7	2019-04-15 11:55:00+01	1	1
+7	2019-04-15 11:57:00+01	0	1
 \.
 
-SELECT is(count(*), 7::bigint, 'icinga_hoststatus has correct # of rows') FROM icinga_hoststatus;
+SELECT is(count(*), 10::bigint, 'icinga_hoststatus has correct # of rows') FROM icinga_hoststatus;
