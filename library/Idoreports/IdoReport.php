@@ -226,25 +226,32 @@ abstract class IdoReport extends ReportHook
         }
     }
 
-    protected function yieldTimerange(Timerange $timerange, \DateInterval $interval)
+    protected function yieldTimerange(Timerange $timerange, \DateInterval $interval, $boundary)
     {
         $start = clone $timerange->getStart();
         $end = clone $timerange->getEnd();
-
         $oneSecond = new \DateInterval('PT1S');
+
+        if ($boundary !== false) {
+            $intermediate = (clone $start)->modify($boundary);
+            if ($intermediate < $end) {
+                yield [clone $start, $intermediate->sub($oneSecond)];
+
+                $start->modify($boundary);
+            }
+        }
 
         $period = new \DatePeriod($start, $interval, $end, \DatePeriod::EXCLUDE_START_DATE);
 
         foreach ($period as $date) {
             /** @var \DateTime $date */
-            $periodEnd = clone $date;
-            $periodEnd->sub($oneSecond);
 
-            yield [$start, $periodEnd];
+            yield [$start, (clone $date)->sub($oneSecond)];
 
             $start = $date;
         }
 
+        // @TODO(el): Should we add if ($start < $end) here to protect us from invalid ranges?
         yield [$start, $end];
     }
 }

@@ -50,14 +50,17 @@ class ServiceSlaReport extends IdoReport
                 case 'day':
                     $interval = new \DateInterval('P1D');
                     $format = 'Y-m-d';
+                    $boundary = false;
                     break;
                 case 'week':
                     $interval = new \DateInterval('P1W');
                     $format = 'Y-\WW';
+                    $boundary = 'monday next week midnight';
                     break;
                 case 'month':
                     $interval = new \DateInterval('P1M');
                     $format = 'Y-m';
+                    $boundary = 'first day of next month midnight';
                     break;
             }
 
@@ -67,8 +70,12 @@ class ServiceSlaReport extends IdoReport
 
             $rows = [];
 
-            foreach ($this->yieldTimerange($timerange, $interval) as list($start, $end)) {
+            foreach ($this->yieldTimerange($timerange, $interval, $boundary) as list($start, $end)) {
                 foreach ($this->fetchServiceSla(new Timerange($start, $end), $config) as $row) {
+                    if ($row->sla === null) {
+                        continue;
+                    }
+
                     $rows[] = (new ReportRow())
                         ->setDimensions([$row->host_display_name, $row->service_display_name, $start->format($format)])
                         ->setValues([(float) $row->sla]);
