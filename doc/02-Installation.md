@@ -1,4 +1,4 @@
-# <a id="Installation"></a>Installation
+# Installation
 
 ## Requirements
 
@@ -63,9 +63,7 @@ Please adapt the database and username to your environment.
 
 ## Installation
 
-1. Just drop this module to a `idoreports` subfolder in your Icinga Web 2 module path.
-
-2. Log in with a privileged user in Icinga Web 2 and enable the module in `Configuration -> Modules -> idoreports`.
-Or use the `icingacli` and run `icingacli module enable idoreports`.
+Install it [like any other module](https://icinga.com/docs/icinga-web-2/latest/doc/08-Modules/#installation).
+Use `idoreports` as name.
 
 This concludes the installation. You should now be able to create host and service availability reports.
