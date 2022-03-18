@@ -6,4 +6,5 @@ INSERT INTO icinga_objects VALUES (3,1);
 INSERT INTO icinga_objects VALUES (4,1);
 INSERT INTO icinga_objects VALUES (5,1);
 INSERT INTO icinga_objects VALUES (6,1);
-SELECT is(count(*), 6::bigint, 'icinga_objects has correct # of rows') FROM icinga_objects;
+INSERT INTO icinga_objects VALUES (7,1);
+SELECT is(count(*), 7::bigint, 'icinga_objects has correct # of rows') FROM icinga_objects;

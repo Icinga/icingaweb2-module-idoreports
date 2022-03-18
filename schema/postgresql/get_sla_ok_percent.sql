@@ -195,31 +195,37 @@ WITH
         WHERE
             timeframe && tsrange(starttime, endtime, '(]')
     ),
+    covered AS (
+        SELECT 
+               upper(covered_by_downtime) - lower(covered_by_downtime) AS dauer
+        FROM (
+          SELECT
+              timeframe * downtime AS covered_by_downtime
+          FROM
+              relevant
+                  LEFT JOIN downtimes ON timeframe && downtime
+          WHERE
+              down
+       ) AS foo
+    ),
     relevant_down AS (
         SELECT *,
-            timeframe * downtime AS covered,
-            COALESCE(timeframe - downtime, timeframe) AS not_covered
+            upper(timeframe) - lower(timeframe) AS dauer
         FROM
             relevant
-                LEFT JOIN downtimes ON timeframe && downtime
         WHERE
             down
     ),
-    effective_downtimes AS (
-        SELECT
-            not_covered,
-            upper(not_covered) - lower(not_covered) AS dauer
-        FROM
-            relevant_down
-    ),
     final_result AS (
         SELECT
-            sum(dauer) AS total_downtime,
+            sum(dauer) - (
+		SELECT sum(dauer) FROM covered
+	    ) AS total_downtime,
             endtime - starttime AS considered,
             COALESCE(extract('epoch' from sum(dauer)), 0) AS down_secs,
             extract('epoch' from endtime - starttime) AS considered_secs
         FROM
-            effective_downtimes
+            relevant_down
     )
 
 SELECT
