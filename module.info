@@ -1,4 +1,4 @@
 Module: IDO Reports
 Version: 0.9.1
-Depends: reporting
+Depends: reporting, ipl (>=0.5.0)
 Description: Reports for IDO
