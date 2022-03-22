@@ -1,4 +1,6 @@
 Module: IDO Reports
 Version: 0.9.1
-Depends: reporting, ipl (>=0.5.0)
+Requires:
+  Libraries: icinga-php-library (>=0.8.0)
+  Modules: monitoring (>=2.9.0), reporting (>=0.9.0)
 Description: Reports for IDO

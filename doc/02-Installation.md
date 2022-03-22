@@ -2,15 +2,13 @@
 
 ## Requirements
 
-* Icinga Web 2 (&gt;= 2.7)
-* PHP (&gt;= 7.0)
-* MySQL, MariaDB or PostgreSQL
+* PHP (>= 7.0)
+* Icinga Web 2 (>= 2.9)
+* Icinga Web 2 libraries:
+  * [Icinga PHP Library (ipl)](https://github.com/Icinga/icinga-php-library) (>= 0.8)
 * Icinga Web 2 modules:
   * [reporting](https://github.com/Icinga/icingaweb2-module-reporting) (>= 0.9)
-
-If your Icinga Web 2 is **not** v2.9+, the following module is also required:
-
-* [Icinga PHP Library (ipl)](https://github.com/Icinga/icingaweb2-module-ipl) (0.5.0)
+* MySQL, MariaDB or PostgreSQL
 
 ## Database Setup
 
