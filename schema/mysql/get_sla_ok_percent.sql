@@ -47,7 +47,7 @@ BEGIN
     RETURN NULL;
   END IF;
 
-SELECT CASE WHEN @last_state IS NULL THEN NULL ELSE sla_ok_percent END INTO result FROM (
+SELECT CASE WHEN @last_state IS NULL THEN NULL ELSE CAST(sla_ok_seconds / total_time * 100 AS DECIMAL(7, 4)) END INTO result FROM (
 SELECT
   @sla_ok_seconds := SUM(
     CASE
