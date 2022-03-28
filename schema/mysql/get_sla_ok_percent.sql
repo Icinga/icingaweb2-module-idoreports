@@ -54,7 +54,7 @@ SELECT
       WHEN in_downtime + out_of_slatime > 0 THEN 1
       WHEN is_problem THEN 0
       ELSE 1
-    END * duration / (UNIX_TIMESTAMP(@end) - UNIX_TIMESTAMP(@start))
+    END * duration)
   ) AS sla_ok_seconds,
   @sla_ok_percent := CAST(100 * SUM(
     CASE
