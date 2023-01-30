@@ -47,14 +47,14 @@ BEGIN
     RETURN NULL;
   END IF;
 
-SELECT CASE WHEN @last_state IS NULL THEN NULL ELSE sla_ok_percent END INTO result FROM (
+SELECT CASE WHEN @last_state IS NULL THEN NULL ELSE CAST(sla_ok_seconds / total_time * 100 AS DECIMAL(7, 4)) END INTO result FROM (
 SELECT
   @sla_ok_seconds := SUM(
     CASE
       WHEN in_downtime + out_of_slatime > 0 THEN 1
       WHEN is_problem THEN 0
       ELSE 1
-    END * duration / (UNIX_TIMESTAMP(@end) - UNIX_TIMESTAMP(@start))
+    END * duration
   ) AS sla_ok_seconds,
   @sla_ok_percent := CAST(100 * SUM(
     CASE
